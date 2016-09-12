@@ -6,6 +6,7 @@ use listener::Listener;
 use settings::Settings;
 use loirc::{self, connect};
 use loirc::{ActivityMonitor, Code, Event, Message, Prefix, Writer};
+use std::cell::{Cell, Ref, RefCell};
 
 /// Errors that can occur.
 #[derive(Debug)]
@@ -157,17 +158,17 @@ pub enum ChannelUserStatus {
 #[derive(Debug)]
 pub struct ChannelUser {
     /// Nickname of the user.
-    nickname: Mutex<Arc<String>>,
+    nickname: RefCell<String>,
     /// Status of the user inside the channel.
-    status: Mutex<ChannelUserStatus>,
+    status: Cell<ChannelUserStatus>,
 }
 
 impl ChannelUser {
 
     fn new(nickname: &str, status: ChannelUserStatus) -> ChannelUser {
         ChannelUser {
-            nickname: Mutex::new(Arc::new(nickname.into())),
-            status: Mutex::new(status),
+            nickname: RefCell::new(nickname.into()),
+            status: Cell::new(status),
         }
     }
 
@@ -191,21 +192,21 @@ impl ChannelUser {
     }
 
     /// Get the nickname of the user.
-    pub fn nickname(&self) -> Arc<String> {
-        self.nickname.lock().unwrap().clone()
+    pub fn nickname(&self) -> Ref<String> {
+        self.nickname.borrow()
     }
 
     /// Get the status of the user.
     pub fn status(&self) -> ChannelUserStatus {
-        *self.status.lock().unwrap()
+        self.status.get()
     }
 
     fn set_nickname(&self, nickname: &str) {
-        *self.nickname.lock().unwrap() = Arc::new(nickname.into());
+        *self.nickname.borrow_mut() = nickname.into();
     }
 
     fn set_status(&self, status: ChannelUserStatus) {
-        *self.status.lock().unwrap() = status;
+        self.status.set(status);
     }
 
 }
